@@ -2,7 +2,9 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel.Design.Serialization;
     using System.Threading;
+    using Unity.PlasticSCM.Editor.WebApi;
     using UnityEngine;
     using static System.Math;
     class MCTSSearch : ISearch
@@ -66,10 +68,35 @@
 
         void SearchMoves()
         {
-            // TODO
-            // Don't forget to end the search once the abortSearch parameter gets set to true.
+            MCTSNode rootNode = new(board.Clone(), Move.InvalidMove);
 
-            throw new NotImplementedException();
+            for (int i = 0; i < settings.maxNumOfPlayouts; i++)
+            {
+                MCTSNode currentBestNode = rootNode;
+                if (abortSearch) 
+                    break;
+
+                // Selection
+                while(currentBestNode.isExpandable())
+                {
+                    currentBestNode = currentBestNode.Selection();
+                }
+
+                // Expansion
+                if (!currentBestNode.hasEnded())
+                    currentBestNode.Expand();
+
+                // Simulation
+                double simulationResult = currentBestNode.Simulate();
+
+                // Backpropagation
+                currentBestNode.PropagateResult(simulationResult);
+            }
+
+            onSearchComplete?.Invoke(rootNode.Selection().movePlayed);
+            
+
+            // throw new NotImplementedException();
         }
 
         void LogDebugInfo()
